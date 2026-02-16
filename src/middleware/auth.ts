@@ -1,26 +1,36 @@
-import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import { RequestHandler } from "express";
+import jwt from "jsonwebtoken";
+import { env } from "../config/env";
+import type { AuthPayload } from "../types/auth";
 
-export const auth = async (req: Request, res: Response, next: NextFunction) => {
+export const auth: RequestHandler = async (req, res, next) => {
   try {
     const token =
       req.header("Authorization")?.replace("Bearer ", "") ||
       req.cookies.accessToken ||
       "";
-    // console.log("Token:", token);
-    const secret = process.env.JWT_SECRET!;
+    console.log(token)
+    const secret = env.JWT_SECRET!;
     if (!token) {
-      return res.status(403).json({
+      res.status(403).json({
         error: "Please Authenticte.Token Not Found",
         success: false,
       });
+      return;
     }
-    const decoded = jwt.verify(token, secret) as JwtPayload | string;
+    const decoded = jwt.verify(token, secret) as AuthPayload;
+    if (
+      !decoded ||
+      typeof decoded !== "object" ||
+      typeof decoded.user_id !== "string"
+    ) {
+      res.status(401).send({ error: "Please authenticate" });
+      return;
+    }
     req.user = decoded;
-    // console.log("Decoded user:", decoded);
     next();
   } catch (error) {
     console.log(error);
-    return res.status(401).send({ error: "Please authenticate" });
+    res.status(401).send({ error: "Please authenticate" });
   }
 };

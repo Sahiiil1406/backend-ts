@@ -1,8 +1,12 @@
-import "express-serve-static-core";
-import type { JwtPayload } from "jsonwebtoken";
+import type { AuthPayload, EmailVerificationPayload } from "./auth";
 
-declare module "express-serve-static-core" {
-  interface Request {
-    user?: JwtPayload | string;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthPayload;
+      verificationPayload?: EmailVerificationPayload; // Added verification payload
+    }
   }
 }
+
+export {};

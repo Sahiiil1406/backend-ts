@@ -1,0 +1,270 @@
+openapi: 3.0.0
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Create account (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [student, teacher, admin]
+                phone_no:
+                  type: string
+                address:
+                  type: string
+                father_name:
+                  type: string
+                mother_name:
+                  type: string
+                current_class:
+                  type: string
+                aadhar_no:
+                  type: string
+                date_of_birth:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: Account created
+  /api/auth/verify:
+    post:
+      tags:
+        - Auth
+      summary: Complete email verification and set password
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+          description: Email verification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 255
+                  description: User's new password
+      responses:
+        "200":
+          description: Email verified and password set successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    nullable: true
+        "400":
+          description: Verification token is required
+        "401":
+          description: Invalid or expired verification token
+        "404":
+          description: User not found
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login and receive tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+  /api/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          description: Token refreshed
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout and revoke refresh token
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logged out
+  /api/auth/users:
+    get:
+      tags:
+        - Users
+      summary: List users (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [student, teacher, admin]
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [created_at, name, email]
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        "200":
+          description: Users list
+  /api/auth/users/{id}:
+    patch:
+      tags:
+        - Users
+      summary: Update user details
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: User updated
+    delete:
+      tags:
+        - Users
+      summary: Delete user account
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account deleted
+  /api/auth/admin:
+    post:
+      tags:
+        - Auth
+      summary: Create admin account (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 255
+      responses:
+        "201":
+          description: Admin created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "409":
+          description: Account already exists
+        "403":
+          description: Access denied - admin role required
+        "401":
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

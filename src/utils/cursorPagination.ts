@@ -29,14 +29,14 @@ export const encodeCursor = (id: number | string): string => {
  * @param cursor - The base64 encoded cursor
  * @returns The decoded ID or null if invalid
  */
-export const decodeCursor = (cursor: string): number | null => {
+export const decodeCursor = (cursor: string): string | null => {
   try {
     if (!cursor || typeof cursor !== "string") {
       return null;
     }
     const decoded = Buffer.from(cursor, "base64").toString("utf-8");
-    const id = parseInt(decoded.replace("cursor_", ""), 10);
-    return isNaN(id) ? null : id;
+    const id = decoded.replace("cursor_", "");
+    return id || null;
   } catch (error) {
     return null;
   }
@@ -50,7 +50,7 @@ export const decodeCursor = (cursor: string): number | null => {
 export const parseCursorParams = (query: any): CursorPaginationParams => {
   const limit = Math.min(
     Math.max(parseInt(query.limit as string) || 10, 1),
-    100 // Max limit 100
+    100, // Max limit 100
   );
 
   return {
@@ -69,7 +69,7 @@ export const parseCursorParams = (query: any): CursorPaginationParams => {
 export const createCursorResult = <T extends { [key: string]: any }>(
   data: T[],
   limit: number,
-  idField: string = "id"
+  idField: string = "id",
 ): CursorPaginationResult<T> => {
   const hasMore = data.length > limit;
   const resultData = hasMore ? data.slice(0, limit) : data;
