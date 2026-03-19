@@ -5,56 +5,49 @@ paths:
     post:
       tags:
         - Auth
-      summary: Create account (admin only)
-      security:
-        - bearerAuth: []
+      summary: Create account
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [name, email, password]
+              required: [name, email]
               properties:
                 name:
                   type: string
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
+                  minLength: 8
+                  maxLength: 255
                 role:
                   type: string
                   enum: [student, teacher, admin]
-                phone_no:
+                college_id:
                   type: string
-                address:
+                  format: uuid
+                year:
+                  type: integer
+                course:
                   type: string
-                father_name:
-                  type: string
-                mother_name:
-                  type: string
-                current_class:
-                  type: string
-                aadhar_no:
-                  type: string
-                date_of_birth:
-                  type: string
-                  format: date-time
       responses:
         "201":
           description: Account created
+
   /api/auth/verify:
     post:
       tags:
         - Auth
-      summary: Complete email verification and set password
+      summary: Set password from verification token
       parameters:
         - in: query
           name: token
           required: true
           schema:
             type: string
-          description: Email verification token
       requestBody:
         required: true
         content:
@@ -67,30 +60,10 @@ paths:
                   type: string
                   minLength: 8
                   maxLength: 255
-                  description: User's new password
       responses:
         "200":
-          description: Email verified and password set successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: object
-                    nullable: true
-        "400":
-          description: Verification token is required
-        "401":
-          description: Invalid or expired verification token
-        "404":
-          description: User not found
+          description: Password set successfully
+
   /api/auth/login:
     post:
       tags:
@@ -106,11 +79,13 @@ paths:
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
       responses:
         "200":
           description: Login successful
+
   /api/auth/refresh:
     post:
       tags:
@@ -128,6 +103,7 @@ paths:
       responses:
         "200":
           description: Token refreshed
+
   /api/auth/logout:
     post:
       tags:
@@ -138,6 +114,7 @@ paths:
       responses:
         "200":
           description: Logged out
+
   /api/auth/users:
     get:
       tags:
@@ -160,6 +137,11 @@ paths:
             type: string
             enum: [student, teacher, admin]
         - in: query
+          name: college_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
           name: search
           schema:
             type: string
@@ -167,7 +149,7 @@ paths:
           name: sort
           schema:
             type: string
-            enum: [created_at, name, email]
+            enum: [created_at, name, email, year]
         - in: query
           name: order
           schema:
@@ -176,6 +158,7 @@ paths:
       responses:
         "200":
           description: Users list
+
   /api/auth/users/{id}:
     patch:
       tags:
@@ -186,9 +169,10 @@ paths:
       parameters:
         - in: path
           name: id
-          required: false
+          required: true
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -207,12 +191,14 @@ paths:
       parameters:
         - in: path
           name: id
-          required: false
+          required: true
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: Account deleted
+
   /api/auth/admin:
     post:
       tags:
@@ -239,22 +225,16 @@ paths:
                   type: string
                   minLength: 8
                   maxLength: 255
+                college_id:
+                  type: string
+                  format: uuid
+                year:
+                  type: integer
+                course:
+                  type: string
       responses:
         "201":
           description: Admin created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: object
         "409":
           description: Account already exists
         "403":

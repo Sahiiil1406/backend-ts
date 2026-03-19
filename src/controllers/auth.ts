@@ -38,18 +38,7 @@ const buildAuthCookies = () => ({
 });
 
 export const createAccount = controllerWrapper(async (req, res) => {
-  const {
-    name,
-    email,
-    role,
-    phone_no,
-    address,
-    father_name,
-    mother_name,
-    current_class,
-    aadhar_no,
-    date_of_birth,
-  } = req.body;
+  const { name, email, password, role, college_id, year, course } = req.body;
 
   const existing = await db
     .select()
@@ -66,26 +55,29 @@ export const createAccount = controllerWrapper(async (req, res) => {
     .values({
       name,
       email,
-      password: null,
+      password: password ? await hashPassword(password) : null,
       role: role ?? "student",
-      phone_no,
-      address,
-      father_name,
-      mother_name,
-      current_class,
-      aadhar_no,
-      date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
-      email_verified: false,
+      college_id,
+      year,
+      course,
     })
-    .returning({ id: users.id, email: users.email, name: users.name });
+    .returning({
+      user_id: users.user_id,
+      email: users.email,
+      name: users.name,
+    });
 
   if (!inserted.length) {
     throw new ApiError(500, "Failed to create account");
   }
 
+  if (password) {
+    return res.status(201).json(ApiResponse.success(null, "Account created"));
+  }
+
   const user = inserted[0];
   const verificationToken = jwt.sign(
-    { user_id: user.id, email: user.email },
+    { user_id: user.user_id, email: user.email },
     env.JWT_SECRET!,
     { expiresIn: "24h" },
   );
@@ -130,7 +122,7 @@ export const completeVerification = controllerWrapper(async (req, res) => {
   const userRows = await db
     .select()
     .from(users)
-    .where(eq(users.id, payload.user_id))
+    .where(eq(users.user_id, payload.user_id))
     .limit(1);
 
   if (!userRows.length) {
@@ -141,24 +133,23 @@ export const completeVerification = controllerWrapper(async (req, res) => {
   if (user.email !== payload.email) {
     throw new ApiError(401, "Invalid verification token");
   }
-  if (user.email_verified) {
+  if (user.password) {
     return res
       .status(200)
-      .json(ApiResponse.success(null, "Email already verified"));
+      .json(ApiResponse.success(null, "Password already set"));
   }
 
   await db
     .update(users)
     .set({
       password: await hashPassword(password),
-      email_verified: true,
       updated_at: new Date(),
     })
-    .where(eq(users.id, user.id));
+    .where(eq(users.user_id, user.user_id));
 
   return res
     .status(200)
-    .json(ApiResponse.success(null, "Email verified and password set"));
+    .json(ApiResponse.success(null, "Password set successfully"));
 });
 export const login = controllerWrapper(async (req, res) => {
   const { email, password } = req.body;
@@ -174,9 +165,6 @@ export const login = controllerWrapper(async (req, res) => {
   }
 
   const user = found[0];
-  if (!user.email_verified) {
-    throw new ApiError(403, "Email not verified");
-  }
   if (!user.is_active) {
     throw new ApiError(403, "Account is inactive");
   }
@@ -185,21 +173,21 @@ export const login = controllerWrapper(async (req, res) => {
     throw new ApiError(401, "Invalid credentials");
   }
 
-  await db.delete(refreshTokens).where(eq(refreshTokens.user_id, user.id));
+  await db.delete(refreshTokens).where(eq(refreshTokens.user_id, user.user_id));
 
   const accessToken = generateAccessToken({
-    user_id: user.id,
+    user_id: user.user_id,
     role: user.role,
   });
   const refreshToken = await generateRefreshToken({
-    user_id: user.id,
+    user_id: user.user_id,
     role: user.role,
   });
 
   await db
     .update(users)
     .set({ last_login_at: new Date(), updated_at: new Date() })
-    .where(eq(users.id, user.id));
+    .where(eq(users.user_id, user.user_id));
 
   res.cookie("accessToken", accessToken, buildAuthCookies());
   res.cookie("refreshToken", refreshToken, buildAuthCookies());
@@ -210,10 +198,13 @@ export const login = controllerWrapper(async (req, res) => {
         accessToken,
         refreshToken,
         user: {
-          id: user.id,
+          id: user.user_id,
           name: user.name,
           email: user.email,
           role: user.role,
+          college_id: user.college_id,
+          year: user.year,
+          course: user.course,
         },
       },
       "Login successful",
@@ -260,7 +251,7 @@ export const refresh = controllerWrapper(async (req, res) => {
   const userRows = await db
     .select()
     .from(users)
-    .where(eq(users.id, payload.user_id))
+    .where(eq(users.user_id, payload.user_id))
     .limit(1);
 
   if (!userRows.length) {
@@ -269,11 +260,11 @@ export const refresh = controllerWrapper(async (req, res) => {
 
   const user = userRows[0];
   const newAccessToken = generateAccessToken({
-    user_id: user.id,
+    user_id: user.user_id,
     role: user.role,
   });
   const newRefreshToken = await generateRefreshToken({
-    user_id: user.id,
+    user_id: user.user_id,
     role: user.role,
   });
 
@@ -304,47 +295,46 @@ export const logout = controllerWrapper(async (req, res) => {
 });
 
 export const updateUserDetail = controllerWrapper(async (req, res) => {
-  const targetId =
-    req.params.id ??
-    (typeof req.user === "string" ? undefined : req.user?.user_id);
-  if (!targetId) {
-    throw new ApiError(400, "User id is required");
-  }
+  const targetId = req.params.id;
 
   const updateData: Record<string, unknown> = { ...req.body };
 
-  if (updateData.date_of_birth) {
-    updateData.date_of_birth = new Date(updateData.date_of_birth as string);
-  }
-
   updateData.updated_at = new Date();
 
-  await db.update(users).set(updateData).where(eq(users.id, targetId));
+  if (typeof updateData.password === "string") {
+    updateData.password = await hashPassword(updateData.password);
+  }
+
+  await db.update(users).set(updateData).where(eq(users.user_id, targetId));
 
   return res.status(200).json(ApiResponse.success(null, "User updated"));
 });
 
 export const deleteAccount = controllerWrapper(async (req, res) => {
-  const targetId =
-    req.params.id ??
-    (typeof req.user === "string" ? undefined : req.user?.user_id);
-  if (!targetId) {
-    throw new ApiError(400, "User id is required");
-  }
+  const targetId = req.params.id;
 
   await db.delete(refreshTokens).where(eq(refreshTokens.user_id, targetId));
-  await db.delete(users).where(eq(users.id, targetId));
+  await db.delete(users).where(eq(users.user_id, targetId));
 
   return res.status(200).json(ApiResponse.success(null, "Account deleted"));
 });
 
 export const listUsers = controllerWrapper(async (req, res) => {
   const { limit, cursor } = parseCursorParams(req.query);
-  const { role, search, sort = "created_at", order = "desc" } = req.query;
+  const {
+    role,
+    college_id,
+    search,
+    sort = "created_at",
+    order = "desc",
+  } = req.query;
 
   const whereClauses = [] as any[];
   if (role) {
     whereClauses.push(eq(users.role, role as string));
+  }
+  if (college_id) {
+    whereClauses.push(eq(users.college_id, college_id as string));
   }
   if (search) {
     whereClauses.push(
@@ -369,26 +359,31 @@ export const listUsers = controllerWrapper(async (req, res) => {
             ? users.name
             : sort === "email"
               ? users.email
-              : users.created_at,
+              : sort === "year"
+                ? users.year
+                : users.created_at,
         )
       : desc(
           sort === "name"
             ? users.name
             : sort === "email"
               ? users.email
-              : users.created_at,
+              : sort === "year"
+                ? users.year
+                : users.created_at,
         );
 
   const data = await db
     .select({
-      id: users.id,
+      id: users.user_id,
       name: users.name,
       email: users.email,
       role: users.role,
-      phone_no: users.phone_no,
+      college_id: users.college_id,
+      year: users.year,
+      course: users.course,
       created_at: users.created_at,
       is_active: users.is_active,
-      email_verified: users.email_verified,
     })
     .from(users)
     .where(whereClauses.length ? and(...whereClauses) : undefined)
@@ -401,17 +396,17 @@ export const listUsers = controllerWrapper(async (req, res) => {
 });
 
 export const createAdmin = controllerWrapper(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, college_id, year, course } = req.body;
   const existing = await db
     .select()
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
-  console.log(existing);
+
   if (existing.length) {
     throw new ApiError(409, "Account already exists");
   }
-  
+
   const hashedPassword = await hashPassword(password);
 
   const newUser = await db
@@ -421,6 +416,9 @@ export const createAdmin = controllerWrapper(async (req, res) => {
       email,
       password: hashedPassword,
       role: "admin",
+      college_id,
+      year,
+      course,
     })
     .returning();
 

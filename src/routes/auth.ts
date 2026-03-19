@@ -26,13 +26,7 @@ import { requireRole } from "../middleware/rbac";
 
 const router = Router();
 
-router.post(
-  "/register",
-  auth,
-  requireRole("admin"),
-  validate(createAccountSchema),
-  createAccount,
-);
+router.post("/register", validate(createAccountSchema), createAccount);
 router.post(
   "/verify",
   validate(completeVerificationSchema),
@@ -50,14 +44,14 @@ router.get(
   listUsers,
 );
 router.patch(
-  "/users/:id?",
+  "/users/:id",
   auth,
   validate(updateUserSchema),
   requireRole("admin"),
   updateUserDetail,
 );
 router.delete(
-  "/users/:id?",
+  "/users/:id",
   auth,
   validate(deleteUserSchema),
   requireRole("admin"),

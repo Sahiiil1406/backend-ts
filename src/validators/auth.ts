@@ -4,14 +4,11 @@ export const createAccountSchema = z.object({
   body: z.object({
     name: z.string().min(2).max(150),
     email: z.string().email(),
+    password: z.string().min(8).max(255).optional(),
     role: z.enum(["student", "teacher", "admin"]).optional(),
-    phone_no: z.string().max(20).optional(),
-    address: z.string().max(255).optional(),
-    father_name: z.string().max(150).optional(),
-    mother_name: z.string().max(150).optional(),
-    current_class: z.string().max(50).optional(),
-    aadhar_no: z.string().length(12).optional(),
-    date_of_birth: z.string().datetime().optional(),
+    college_id: z.string().uuid().optional(),
+    year: z.number().int().min(1).max(10).optional(),
+    course: z.string().max(150).optional(),
   }),
 });
 
@@ -41,17 +38,14 @@ export const refreshSchema = z.object({
 
 export const updateUserSchema = z.object({
   params: z.object({
-    id: z.string().uuid().optional(),
+    id: z.string().uuid(),
   }),
   body: z.object({
     name: z.string().min(2).max(150).optional(),
-    phone_no: z.string().max(20).optional(),
-    father_name: z.string().max(150).optional(),
-    mother_name: z.string().max(150).optional(),
-    current_class: z.string().max(50).optional(),
-    aadhar_no: z.string().length(12).optional(),
-    date_of_birth: z.string().datetime().optional(),
-    address: z.string().max(255).optional(),
+    password: z.string().min(8).max(255).optional(),
+    college_id: z.string().uuid().optional(),
+    year: z.number().int().min(1).max(10).optional(),
+    course: z.string().max(150).optional(),
     role: z.enum(["student", "teacher", "admin"]).optional(),
     is_active: z.boolean().optional(),
   }),
@@ -62,15 +56,16 @@ export const listUsersSchema = z.object({
     limit: z.string().optional(),
     cursor: z.string().optional(),
     role: z.enum(["student", "teacher", "admin"]).optional(),
+    college_id: z.string().uuid().optional(),
     search: z.string().optional(),
-    sort: z.enum(["created_at", "name", "email"]).optional(),
+    sort: z.enum(["created_at", "name", "email", "year"]).optional(),
     order: z.enum(["asc", "desc"]).optional(),
   }),
 });
 
 export const deleteUserSchema = z.object({
   params: z.object({
-    id: z.string().uuid().optional(),
+    id: z.string().uuid(),
   }),
 });
 
@@ -79,5 +74,8 @@ export const createAdminSchema = z.object({
     name: z.string().min(2).max(150),
     email: z.string().email(),
     password: z.string().min(8).max(255),
+    college_id: z.string().uuid().optional(),
+    year: z.number().int().min(1).max(10).optional(),
+    course: z.string().max(150).optional(),
   }),
 });
