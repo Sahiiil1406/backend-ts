@@ -79,3 +79,18 @@ export const createAdminSchema = z.object({
     course: z.string().max(150).optional(),
   }),
 });
+
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+  }),
+});
+
+export const resetPasswordSchema = z.object({
+  query: z.object({
+    token: z.string().min(10),
+  }),
+  body: z.object({
+    password: z.string().min(8).max(255),
+  }),
+});

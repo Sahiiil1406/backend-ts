@@ -424,3 +424,99 @@ export const createAdmin = controllerWrapper(async (req, res) => {
 
   return res.status(201).json(ApiResponse.success(newUser[0], "Admin created"));
 });
+
+export const forgotPassword = controllerWrapper(async (req, res) => {
+  const { email } = req.body;
+
+  const userRows = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  // Always return success for security (don't reveal if email exists)
+  if (!userRows.length) {
+    return res
+      .status(200)
+      .json(
+        ApiResponse.success(
+          null,
+          "If this email exists, a reset link has been sent",
+        ),
+      );
+  }
+
+  const user = userRows[0];
+  const resetToken = jwt.sign(
+    { user_id: user.user_id, email: user.email },
+    env.JWT_SECRET!,
+    { expiresIn: "1h" },
+  );
+
+  const baseUrl =
+    env.BASE_BACKEND_URL ?? `${req.protocol}://${req.get("host")}`;
+  const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(
+    resetToken,
+  )}`;
+
+  await sendMail(
+    user.email,
+    "Reset Your Password",
+    `Click the link below to reset your password. This link expires in 1 hour: ${resetUrl}`,
+    `<p>Click the link below to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 1 hour.</p>`,
+  );
+
+  return res
+    .status(200)
+    .json(
+      ApiResponse.success(
+        null,
+        "If this email exists, a reset link has been sent",
+      ),
+    );
+});
+
+export const resetPassword = controllerWrapper(async (req, res) => {
+  const token = Array.isArray(req.query.token)
+    ? req.query.token[0]
+    : req.query.token;
+  const { password } = req.body;
+
+  if (!token || typeof token !== "string") {
+    throw new ApiError(400, "Reset token is required");
+  }
+
+  let payload: { user_id: string; email: string };
+  try {
+    payload = verifyEmailVerificationToken(token);
+  } catch (error) {
+    throw new ApiError(401, "Invalid or expired reset token");
+  }
+
+  const userRows = await db
+    .select()
+    .from(users)
+    .where(eq(users.user_id, payload.user_id))
+    .limit(1);
+
+  if (!userRows.length) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const user = userRows[0];
+  if (user.email !== payload.email) {
+    throw new ApiError(401, "Invalid reset token");
+  }
+
+  await db
+    .update(users)
+    .set({
+      password: await hashPassword(password),
+      updated_at: new Date(),
+    })
+    .where(eq(users.user_id, user.user_id));
+
+  return res
+    .status(200)
+    .json(ApiResponse.success(null, "Password reset successfully"));
+});

@@ -4,10 +4,12 @@ import {
   createAccount,
   createAdmin,
   deleteAccount,
+  forgotPassword,
   listUsers,
   login,
   logout,
   refresh,
+  resetPassword,
   updateUserDetail,
 } from "../controllers/auth";
 import { validate } from "../middleware/validator";
@@ -16,9 +18,11 @@ import {
   createAccountSchema,
   createAdminSchema,
   deleteUserSchema,
+  forgotPasswordSchema,
   listUsersSchema,
   loginSchema,
   refreshSchema,
+  resetPasswordSchema,
   updateUserSchema,
 } from "../validators/auth";
 import { auth } from "../middleware/auth";
@@ -35,6 +39,8 @@ router.post(
 router.post("/login", validate(loginSchema), login);
 router.post("/refresh", validate(refreshSchema), refresh);
 router.post("/logout", auth, logout);
+router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
+router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
 
 router.get(
   "/users",
