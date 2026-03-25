@@ -9,7 +9,6 @@ export const auth: RequestHandler = async (req, res, next) => {
       req.header("Authorization")?.replace("Bearer ", "") ||
       req.cookies.accessToken ||
       "";
-    console.log(token)
     const secret = env.JWT_SECRET!;
     if (!token) {
       res.status(403).json({
