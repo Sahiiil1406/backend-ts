@@ -17,8 +17,8 @@ export const createFlashcard = controllerWrapper(async (req, res) => {
   const inserted = await db
     .insert(flashcards)
     .values({
-      name: req.body.name,
-      description: req.body.description,
+      question: req.body.question,
+      answer: req.body.answer,
       user_id: requester.user_id,
     })
     .returning();
@@ -44,7 +44,7 @@ export const listFlashcards = controllerWrapper(async (req, res) => {
   }
 
   if (search) {
-    whereClauses.push(ilike(flashcards.name, `%${search}%`));
+    whereClauses.push(ilike(flashcards.question, `%${search}%`));
   }
 
   const cursorValue = cursor ? decodeCursor(cursor as string) : null;
@@ -103,7 +103,7 @@ export const updateFlashcard = controllerWrapper(async (req, res) => {
 
   const updated = await db
     .update(flashcards)
-    .set({ name: req.body.name, description: req.body.description })
+    .set({ question: req.body.question, answer: req.body.answer })
     .where(whereClause)
     .returning();
 

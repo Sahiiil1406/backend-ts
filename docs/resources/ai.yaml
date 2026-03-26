@@ -1,0 +1,153 @@
+openapi: 3.0.0
+
+paths:
+  /api/ai/flashcards:
+    post:
+      tags: [AI]
+      summary: Generate flashcards using AI
+      description: Generate 6 flashcard question-answer pairs from a given question
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+                  minLength: 1
+                  description: Topic or question to generate flashcards for
+      responses:
+        "200":
+          description: Flashcards generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        flashcard_id:
+                          type: string
+                          format: uuid
+                        user_id:
+                          type: string
+                          format: uuid
+                        question:
+                          type: string
+                        answer:
+                          type: string
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+        "500":
+          description: AI response format invalid
+
+  /api/ai/mindmaps:
+    post:
+      tags: [AI]
+      summary: Generate mind map using AI
+      description: Generate a mind map structure for a given topic with configurable depth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topic]
+              properties:
+                topic:
+                  type: string
+                  minLength: 1
+                  description: Topic for mind map generation
+                depth:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 3
+                  description: Depth levels of the mind map
+      responses:
+        "200":
+          description: Mind map generated successfully
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+
+  /api/ai/notes:
+    post:
+      tags: [AI]
+      summary: Generate notes using AI
+      description: Generate structured notes from given title and content
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  description: Title for the notes
+                content:
+                  type: string
+                  minLength: 1
+                  description: Content to generate notes from
+                course_id:
+                  type: string
+                  format: uuid
+                  description: Optional course id to associate with notes
+      responses:
+        "200":
+          description: Notes generated successfully
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+
+  /api/ai/course-plan-details:
+    post:
+      tags: [AI]
+      summary: Generate detailed information from course plan
+      description: Generate detailed course information and breakdown from a course plan
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [coursePlanData]
+              properties:
+                coursePlanData:
+                  type: object
+                  description: Course plan data object to parse and detail
+      responses:
+        "200":
+          description: Course plan details generated successfully
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+        "500":
+          description: AI processing error
