@@ -1,0 +1,123 @@
+openapi: 3.0.0
+
+paths:
+  /api/sessions/ask:
+    post:
+      tags: [Session]
+      summary: Ask AI with session context (streaming)
+      description: Creates a new session when sessionId is not provided, sends session metadata first, then streams AI tokens using Server-Sent Events.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                  description: Existing session id. Omit to create a new session.
+                question:
+                  type: string
+                  minLength: 1
+      responses:
+        "200":
+          description: SSE stream with session info and generated tokens
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                stream:
+                  summary: Sample SSE events
+                  value: |
+                    event: session
+                    data: {"sessionId":"4cf2c6a5-6f50-4c68-8f0a-f6a1f7f97a7e","created":true}
+
+                    event: token
+                    data: {"token":"Hello"}
+
+                    event: token
+                    data: {"token":" there"}
+
+                    event: done
+                    data: {"sessionId":"4cf2c6a5-6f50-4c68-8f0a-f6a1f7f97a7e","answer":"Hello there"}
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+        "404":
+          description: Session not found
+
+  /api/sessions/last:
+    get:
+      tags: [Session]
+      summary: Get last session
+      description: Returns the latest session for the authenticated user. Admin can query by user_id.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          description: Optional filter for admin users.
+      responses:
+        "200":
+          description: Last session fetched
+        "404":
+          description: No sessions found
+
+  /api/sessions:
+    get:
+      tags: [Session]
+      summary: List sessions with cursor pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          description: Optional filter for admin users.
+      responses:
+        "200":
+          description: Sessions fetched
+
+  /api/sessions/{id}:
+    get:
+      tags: [Session]
+      summary: Get session by id with messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session fetched
+        "404":
+          description: Session not found

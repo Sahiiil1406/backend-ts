@@ -5,6 +5,7 @@ import courseRoutes from "./course";
 import flashcardRoutes from "./flashcard";
 import mindmapRoutes from "./mindmap";
 import noteRoutes from "./note";
+import sessionRoutes from "./sessions";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use("/courses", courseRoutes);
 router.use("/flashcards", flashcardRoutes);
 router.use("/mindmaps", mindmapRoutes);
 router.use("/notes", noteRoutes);
+router.use("/sessions", sessionRoutes);
 
 export default router;
