@@ -31,9 +31,7 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
 const PORT = env.PORT;
 const BASE_URL = env.BASE_BACKEND_URL ?? `http://localhost:${PORT}`;
 
-if (require.main === module) {
-  app.listen(PORT, () => {
+app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`📑 Swagger Docs at ${BASE_URL}/api-docs`);
-  });
-}
+});

@@ -11,6 +11,7 @@ const envSchema = z
     DATABASE_URL: z.string().optional(),
     JWT_SECRET: z.string().optional(),
     JWT_REFRESH_SECRET: z.string().optional(),
+    GEMINI_API_KEY: z.string().optional(),
     ACCESS_TOKEN_EXPIRY: z.string().optional().default("1h"),
     NODEMAILER_EMAIL: z.string().optional(),
     NODEMAILER_PASSWORD: z.string().optional(),

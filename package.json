@@ -15,6 +15,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@langchain/google-genai": "^2.1.26",
     "@types/bcrypt": "^6.0.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -23,6 +24,7 @@
     "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "langchain": "^1.2.37",
     "nodemailer": "^8.0.0",
     "pg": "^8.18.0",
     "swagger-jsdoc": "^6.2.8",
